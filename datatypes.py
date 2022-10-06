@@ -9,8 +9,8 @@ from nltk.stem.snowball import SnowballStemmer
 
 
 class Words(TypedDict):
-    """Singleton's internal word dictionary of stemmed word-class instance."""
-    stemmed_word: str
+    """Singleton's internal word dictionary of word stem-class instance."""
+    stem: str
     cls: Word
 
 
@@ -20,25 +20,25 @@ class WordSingleton(type):
     new form-sentence record in it or create new word if it doesn't exist.
     """
     _words: Words = {}
-    def __call__(cls, stemmed_word: str, word_form: str, sentence: Sentence):
-        if stemmed_word in cls._words:
-            cls.__append_form_and_sentence(stemmed_word, word_form, sentence)
+    def __call__(cls, stem: str, word_form: str, sentence: Sentence):
+        if stem in cls._words:
+            cls.__append_form_and_sentence(stem, word_form, sentence)
         else:
-            cls._words[stemmed_word] = super(
-                WordSingleton, cls).__call__(stemmed_word, word_form, sentence)
-        return cls._words[stemmed_word]
+            cls._words[stem] = super(
+                WordSingleton, cls).__call__(stem, word_form, sentence)
+        return cls._words[stem]
     
-    def __append_form_and_sentence(cls, stemmed_word: str, word_form: str,
+    def __append_form_and_sentence(cls, stem: str, word_form: str,
                                         sentence: Sentence):
-        if word_form in cls._words[stemmed_word].forms:
-            cls._words[stemmed_word].forms[word_form].append(sentence)
+        if word_form in cls._words[stem].forms:
+            cls._words[stem].forms[word_form].append(sentence)
         else:
-            cls._words[stemmed_word].forms[word_form] = [sentence]
-        cls._words[stemmed_word]._count += 1
+            cls._words[stem].forms[word_form] = [sentence]
+        cls._words[stem]._count += 1
 
 
 class WordFormSentence(TypedDict):
-    """Word base is stemmed word, all other word forms kept in 
+    """Word base is word stem, all other word forms kept in 
     form-sentences dictionary.
     """
     word_form: str
@@ -55,26 +55,26 @@ class Word(metaclass=WordSingleton):
     * count — number of occurences of all forms with this base
     (across all articles).
     """
-    _stemmed_word: str
+    _stem: str
     forms: WordFormSentence = field(init=False)
     _count: str = 0
     
-    def __init__(self, stemmed_word: str, word_form: str, sentence: Sentence):
-        """:param stemmed_word: word base (stemmed using nltk 
+    def __init__(self, stem: str, word_form: str, sentence: Sentence):
+        """:param stem: word base (stemmed using nltk 
         SnowballStemmer).
-        :param word_form: any form with base stemmed_word.
+        :param word_form: any form with base stem.
         :param sentence: Sentence object with this word form.
         """
-        self._stemmed_word = stemmed_word
+        self._stem = stem
         self.forms = {word_form: [sentence]}
         self._count += 1
     
     def __str__(self) -> str:
-        return self._stemmed_word
+        return self._stem
     
     @property
     def text(self) -> str:
-        return self._stemmed_word
+        return self._stem
     
     @property
     def count(self) -> int:
@@ -104,7 +104,7 @@ class Sentence:
         self.text = self.text.strip()
     
     def __split_sentence_into_words(self):
-        """Split sentence into list of stemmed words."""
+        """Split sentence into list of word stems."""
         words = word_tokenize(self.text)
         stemmer = SnowballStemmer('russian')
         for word in words:
