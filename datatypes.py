@@ -8,21 +8,8 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.stem.snowball import SnowballStemmer
 
 
-@dataclass
-class Node:
-    letter: str
-    parent: Node | None
-    children: list[Node] = field(default_factory=list)
-    words: list[Word] = field(default_factory=list)
-
-
-@dataclass
-class WordTree:
-    root: Node
-
-
 class Words(TypedDict):
-    """Singleton's internal word dictionary."""
+    """Singleton's internal word dictionary of stemmed word-class instance."""
     stemmed_word: str
     cls: Word
 
@@ -30,7 +17,8 @@ class Words(TypedDict):
 class WordSingleton(type):
     """Splitting sentences in words results in creating new object for 
     each word. This kind of singleton will return existing word with 
-    new form-sentence record in it or create new word if it doesn't exist."""
+    new form-sentence record in it or create new word if it doesn't exist.
+    """
     _words: Words = {}
     def __call__(cls, stemmed_word: str, word_form: str, sentence: Sentence):
         if stemmed_word in cls._words:
@@ -47,12 +35,12 @@ class WordSingleton(type):
         else:
             cls._words[stemmed_word].forms[word_form] = [sentence]
         cls._words[stemmed_word]._count += 1
-        
 
 
 class WordFormSentence(TypedDict):
     """Word base is stemmed word, all other word forms kept in 
-    form-sentences dictionary."""
+    form-sentences dictionary.
+    """
     word_form: str
     sentences: list[Sentence]
 
@@ -65,7 +53,8 @@ class Word(metaclass=WordSingleton):
     * forms — dictionary with word forms and list of sentences 
     with these forms.
     * count — number of occurences of all forms with this base
-    (across all articles)."""
+    (across all articles).
+    """
     _stemmed_word: str
     forms: WordFormSentence = field(init=False)
     _count: str = 0
@@ -148,7 +137,8 @@ class Article:
     
     def __flatten_article_title(self):
         """Remove newline characters and repeating whitespaces from 
-        article titles."""
+        article titles.
+        """
         self.title = re.sub(r'\n', '', self.title)
         self.title = re.sub(r'\s{2,}', ' ', self.title)
         self.title = self.title.strip()
