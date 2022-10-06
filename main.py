@@ -4,6 +4,7 @@ import fitz
 import nltk
 
 from datatypes import Article
+from tree import WordTree
 
 
 def main():
@@ -13,7 +14,8 @@ def main():
     with open(txt_path, encoding='utf8') as f:
         text = f.read()
     articles = split_text_into_articles(text)
-    print(1)
+    tree = WordTree(articles)
+    tree.traverse()
 
 
 def read_pdf(path: str, save_txt_path: str = None) -> str:
