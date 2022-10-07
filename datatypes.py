@@ -6,8 +6,12 @@ import re
 import time
 
 from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
 from nltk.stem.snowball import SnowballStemmer
 from pymorphy2 import MorphAnalyzer
+
+STOPWORDS = set(stopwords.words('russian')
+                ).union(set(stopwords.words('english')))
 
 
 class Words(TypedDict):
@@ -197,6 +201,7 @@ class Sentence:
     def __split_sentence_into_words(self):
         """Split sentence into list of word stems."""
         words = word_tokenize(self.text)
+        words = [word for word in words if word not in STOPWORDS]
         stemmer = SnowballStemmer('russian')
         for word in words:
             word = Word(stemmer.stem(word), word, self)
