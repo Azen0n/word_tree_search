@@ -15,7 +15,13 @@ def main():
         text = f.read()
     articles = split_text_into_articles(text)
     tree = WordTree(articles)
+    
     tree.traverse()
+    
+    word = input('Enter word (exit): ')
+    while word != 'exit':
+        tree.search(word)
+        word = input('Enter word (exit): ')
 
 
 def read_pdf(path: str, save_txt_path: str = None) -> str:

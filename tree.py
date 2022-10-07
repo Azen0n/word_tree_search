@@ -1,6 +1,9 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 
+from nltk.stem.snowball import SnowballStemmer
+from pymorphy2 import MorphAnalyzer
+
 from datatypes import Article, Word, Words
 
 
@@ -76,5 +79,23 @@ class WordTree:
                 char = input('Not found. Enter char: ')
 
     def search(self, word: str):
-        """Search for every form of word using Word Tree."""
-        pass
+        """Search for every form of word using Word Tree.
+        
+        Returns None, all results is printed in console.
+        """
+        stemmer = SnowballStemmer('russian')
+        morph = MorphAnalyzer()
+        part_of_speech = morph.parse(word)[0].tag.POS
+        stem = stemmer.stem(word)
+        current_node = self.root
+        for char in stem:
+            if char in current_node.children:
+                current_node = current_node.children[char]
+            else:
+                print('Not found.')
+                return
+        if current_node.word is not None:
+            current_node.word.print_articles(part_of_speech)
+        else:
+            print('Not found.')
+            return
