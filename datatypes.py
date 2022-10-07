@@ -1,11 +1,13 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import TypedDict
 import re
 import time
 
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.stem.snowball import SnowballStemmer
+from pymorphy2 import MorphAnalyzer
 
 
 class Words(TypedDict):
@@ -45,6 +47,22 @@ class WordFormSentence(TypedDict):
     sentences: list[Sentence]
 
 
+class PartOfSpeech(Enum):
+    """pymorphy2 parts of speech abbreviations."""
+    ADVB = 'adverb'
+    COMP = 'comparative'
+    CONJ = 'conjunction'
+    GRND = 'gerund'
+    INFN = 'infinitive'
+    INTJ = 'interjection'
+    PRCL = 'particle'
+    PRED = 'predicative'
+    PREP = 'preposition'
+    VERB = 'verb'
+    ADJS = 'short form adjective'
+    PRTS = 'short form participle'
+
+
 @dataclass
 class Word(metaclass=WordSingleton):
     """Word.
@@ -79,6 +97,79 @@ class Word(metaclass=WordSingleton):
     @property
     def count(self) -> int:
         return self._count
+    
+    @property
+    def articles(self) -> dict[Article, WordFormSentence]:
+        """Returns dict of Articles with this word stem and all its forms 
+        and corresponding sentences.
+        """
+        articles = {}
+        for form in self.forms:
+            sentences = self.forms[form]
+            for sentence in sentences:
+                article = sentence.article
+                if article not in articles:
+                    articles[article] = {form: [sentence]}
+                else:
+                    if form in articles[article]:
+                        if sentence not in articles[article][form]:
+                            articles[article][form].append(sentence)
+                    else:
+                        articles[article][form] = [sentence]
+        return articles
+
+    def print_articles(self, part_of_speech: str = None):
+        """Prints all articles, forms and sentences, where word of 
+        part_of_speech occurs.
+        
+        If part_of_speech is None, prints all articles, forms and 
+        sentences with this word.
+        """
+        if part_of_speech is not None:
+            try:
+                part_of_speech = PartOfSpeech[part_of_speech]
+                self.__print_filtered_articles(part_of_speech)
+                return
+            except KeyError:
+                print(f'Part of speech "{part_of_speech}" not found.')
+                print('Printing all articles.')
+        self.__print_all_articles()
+    
+    def __print_filtered_articles(self, part_of_speech: PartOfSpeech):
+        """Prints articles, forms and sentences, where word of 
+        part_of_speech occurs.
+        """
+        morph = MorphAnalyzer()
+        filtered_forms = [form for form in self.forms.keys() if morph.parse(
+                              form)[0].tag.POS == part_of_speech.name]
+        for article in self.articles:
+            article_forms = [form for form in self.articles[article]
+                             if form in filtered_forms]
+            if article_forms:
+                print(f'Article "{article.title}"')
+                print(f'Authors: ', end='')
+                for author in article.authors:
+                    print(f'{author}', end=' ')
+                print()
+                for form in article_forms:
+                    print(f'\n - {form}:')
+                    for i, sentence in enumerate(self.articles[article][form]):
+                        print(f'\t{i + 1}. {sentence.text}')
+                print()
+    
+    def __print_all_articles(self):
+        """Prints all articles, forms and sentences with this word."""
+        for article in self.articles:
+            print(f'Article "{article.title}"')
+            print(f'Authors: ', end='')
+            for author in article.authors:
+                print(f'{author}', end=' ')
+            print()
+            for form in self.articles[article]:
+                print(f'\n - {form}:')
+                for i, sentence in enumerate(self.articles[article][form]):
+                    print(f'\t{i + 1}. {sentence.text}')
+            print()
 
 
 @dataclass
@@ -134,6 +225,9 @@ class Article:
         self.__split_into_sentences()
         end_time = time.time()
         self.__log(end_time - start_time)
+    
+    def __hash__(self) -> int:
+        return hash((self.title, tuple(self.authors)))
     
     def __flatten_article_title(self):
         """Remove newline characters and repeating whitespaces from 

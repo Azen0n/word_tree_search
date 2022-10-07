@@ -69,8 +69,12 @@ class WordTree:
                     print(child, end='  ')
                 print()
                 if not current_node.children:
-                    print((f'Children not found. Word stem in this node:'
-                           f'{current_node.word.text}'))
+                    print(f'Word stem in this node:  {current_node.word.text}')
+                    current_node.word.print_articles()
                 char = input('Enter char (up, exit): ')
-            except:
-                char = input('Not found. Try again: ')
+            except KeyError:
+                char = input('Not found. Enter char: ')
+
+    def search(self, word: str):
+        """Search for every form of word using Word Tree."""
+        pass
