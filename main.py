@@ -8,11 +8,11 @@ from tree import WordTree
 
 
 def main():
+    pdf_path = 'file.pdf'
     txt_path = 'file.txt'
     nltk.download('punkt')
     
-    with open(txt_path, encoding='utf8') as f:
-        text = f.read()
+    text = read_pdf(pdf_path, txt_path)
     articles = split_text_into_articles(text)
     tree = WordTree(articles)
     
@@ -43,7 +43,7 @@ def split_text_into_articles(text: str) -> list[Article]:
                          ((?:.+\n){1,5})    # authors and their universities
                          (?:УДК:?\s+[\d]+\.?[\d]+.+\n)  # УДК (ignored)
                          ((?:.+\n){1,5}(?=Аннотация))   # article title
-                         (?:Аннотация\.?\:?)    # counts as first sentence
+                         (?:Аннотация\.?:?)    # counts as first sentence
                                                 # so ignored
                          """, re.X)
     authors_pattern = r'[А-ЯA-Z]\. ?[А-ЯA-Z]\.? [А-Яа-я]+'

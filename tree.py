@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from nltk.stem.snowball import SnowballStemmer
 from pymorphy2 import MorphAnalyzer
 
-from datatypes import Article, Word, Words
+from datatypes import Article, Word
 
 
 @dataclass
@@ -31,17 +31,16 @@ class WordTree:
     """
     articles: list[Article]
     root: Node = field(init=False)
-    _words: Words = field(init=False)
+    _words: dict[str, Word] = field(init=False)
     
     def __post_init__(self):
         self.root = Node('')
-        self._words = Word._words
+        self._words = Word.words
         self.__build()
-        
-    
+
     def __build(self):
         """Build Word Tree."""
-        stems = list(sorted(list(Word._words.keys())))
+        stems = list(sorted(list(Word.words.keys())))
         for stem in stems:
             current_node = self.root
             for char in stem:
@@ -72,7 +71,7 @@ class WordTree:
                     print(child, end='  ')
                 print()
                 if not current_node.children:
-                    print(f'Word stem in this node:  {current_node.word.text}')
+                    print(f'Word stem in this node:  {current_node.word.stem}')
                     current_node.word.print_articles()
                 char = input('Enter char (up, exit): ')
             except KeyError:
