@@ -18,7 +18,9 @@ def main():
     
     tree.traverse()
     
-    word = input('Enter word (exit): ')
+    word = input('Enter any form of word to search in tree.\n'
+                 ' - exit to leave from search mode\n'
+                 'Enter word: ')
     while word != 'exit':
         tree.search(word)
         word = input('Enter word (exit): ')

@@ -55,27 +55,35 @@ class WordTree:
     def traverse(self):
         """Print Word Tree nodes and words at the leaves using keyboard."""
         current_node = self.root
-        print(f'Children of root:')
-        for child in current_node.children.keys():
-            print(child, end='  ')
-        print()
-        char = input('Enter char (up, exit): ')
+        print('Enter char from list to traverse over tree.\n'
+              ' - up to move to parent node\n'
+              ' - exit to leave from traverse mode')
+        self.__print_node_children(current_node)
+        char = input('Enter char: ')
         while char != 'exit':
-            try:
-                if char == 'up':
-                    current_node = current_node.parent
+            if char == 'up':
+                if current_node.parent is None:
+                    print('At root node.')
                 else:
-                    current_node = current_node.children[char]
-                print(f'Children of "{current_node.char}":')
-                for child in current_node.children.keys():
-                    print(child, end='  ')
-                print()
+                    current_node = current_node.parent
+            elif char in current_node.children:
+                current_node = current_node.children[char]
+                self.__print_node_children(current_node)
                 if not current_node.children:
-                    print(f'Word stem in this node:  {current_node.word.stem}')
+                    print(f'Word stem in this node: {current_node.word.stem}')
                     current_node.word.print_articles()
                 char = input('Enter char (up, exit): ')
-            except KeyError:
-                char = input('Not found. Enter char: ')
+            else:
+                print('Not found.')
+                char = input('Enter char (up, exit): ')
+        print()
+
+    def __print_node_children(self, node: Node):
+        """Prints characters of node children."""
+        print(f'Children of "{node.char}":')
+        for child in node.children.keys():
+            print(child, end='  ')
+        print()
 
     def search(self, word: str):
         """Search for every form of word using Word Tree.
