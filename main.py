@@ -2,6 +2,7 @@ import re
 
 import fitz
 import nltk
+from pymorphy2 import MorphAnalyzer
 
 from datatypes import Article
 from tree import WordTree
@@ -11,6 +12,7 @@ def main():
     pdf_path = 'file.pdf'
     txt_path = 'file.txt'
     nltk.download('punkt')
+    morph = MorphAnalyzer()
     
     text = read_pdf(pdf_path, txt_path)
     articles = split_text_into_articles(text)
@@ -22,7 +24,14 @@ def main():
                  ' - exit to leave from search mode\n'
                  'Enter word: ')
     while word != 'exit':
-        tree.search(word)
+        result = tree.search(word)
+
+        if result is not None:
+            part_of_speech = morph.parse(word)[0].tag.POS
+            result.print_articles(part_of_speech)
+        else:
+            print('Not found.')
+
         word = input('Enter word (exit): ')
 
 
