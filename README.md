@@ -25,6 +25,9 @@ ARTICLE
 Аннотация. <article main body> 
 ```
 
+### Example of search result
+![Search by phrase 'программный код'](https://i.imgur.com/p4uF30P.png "It's ugly in PS for some reason")
+
 ### Dependencies
 ```
 pip install -r requirements.txt
