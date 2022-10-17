@@ -2,40 +2,39 @@ import re
 
 import fitz
 import nltk
-from pymorphy2 import MorphAnalyzer
+from nltk.stem.snowball import SnowballStemmer
 
-from datatypes import Article
+from datatypes import Article, Sentence
 from tree import WordTree
+
+stemmer = SnowballStemmer('russian')
 
 
 def main():
     pdf_path = 'file.pdf'
     txt_path = 'file.txt'
     nltk.download('punkt')
-    morph = MorphAnalyzer()
-    
+
     text = read_pdf(pdf_path, txt_path)
     articles = split_text_into_articles(text)
     tree = WordTree(articles)
-    
+
     tree.traverse()
-    
-    word = input('Enter any form of word to search in tree.\n'
-                 ' - exit to leave from search mode\n'
-                 'Enter word: ')
-    while word != 'exit':
-        result = tree.search(word)
 
-        if result is not None:
-            part_of_speech = morph.parse(word)[0].tag.POS
-            result.print_articles(part_of_speech)
-        else:
-            print('Not found.')
-
-        word = input('Enter word (exit): ')
+    search_input = input('Enter any form of word or phrase to search in tree.\n'
+                         ' - exit to leave from search mode\n'
+                         'Enter word or phrase: ')
+    while search_input != 'exit':
+        result = tree.search(search_input)
+        print_search_result(search_input, result)
+        search_input = input('Enter word or phrase (exit): ')
 
 
 def read_pdf(path: str, save_txt_path: str = None) -> str:
+    """Reads pdf with scholar articles and returns plain string.
+
+    If save_txt_path passed, text is saved in said path.
+    """
     with fitz.open(path) as document:
         text = ''
         for page in document:
@@ -44,6 +43,30 @@ def read_pdf(path: str, save_txt_path: str = None) -> str:
         with open(save_txt_path, 'w', encoding='utf8') as f:
             f.write(text)
     return text
+
+
+def print_search_result(search_input: str, result: list[Sentence]):
+    """Prints list of sentences with highlighted words."""
+    if not result:
+        print('Not found.')
+        return
+    if ' ' in search_input:
+        words = search_input.split(' ')
+    else:
+        words = [search_input]
+    for i, sentence in enumerate(result):
+        sentence_text = sentence.text
+        pattern = [fr'{stemmer.stem(word)}[А-Яа-яA-Za-z]*' for word in words]
+        sentence_text = highlight_sentence_text(' '.join(pattern), sentence_text)
+        print(f'{i + 1}. {sentence_text}')
+
+
+def highlight_sentence_text(pattern: str, sentence_text: str) -> str:
+    """Highlights stem and word ending in sentence text with red color.
+
+    Returns text of sentence.
+    """
+    return re.sub(fr'({pattern})', r'\033[31m\g<1>\033[0m', sentence_text)
 
 
 def split_text_into_articles(text: str) -> list[Article]:
@@ -69,7 +92,7 @@ def split_text_into_articles(text: str) -> list[Article]:
     except IndexError:
         raise IndexError('Wrong split occurred. Adjust regex pattern.')
     return articles
-    
+
 
 if __name__ == '__main__':
     main()

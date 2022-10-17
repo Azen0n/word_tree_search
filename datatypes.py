@@ -11,11 +11,12 @@ from pymorphy2 import MorphAnalyzer
 
 STOPWORDS = set(stopwords.words('russian')
                 ).union(set(stopwords.words('english')))
+stemmer = SnowballStemmer('russian')
 
 
 class WordSingleton(type):
-    """Splitting sentences in words results in creating new object for 
-    each word. This kind of singleton will return existing word with 
+    """Splitting sentences in words results in creating new object for
+    each word. This kind of singleton will return existing word with
     new form-sentence record in it or create new word if it doesn't exist.
     """
     _words: dict[str, Word] = {}
@@ -89,6 +90,9 @@ class Word(metaclass=WordSingleton):
     def __str__(self) -> str:
         return self.stem
 
+    def __hash__(self) -> int:
+        return hash((self.stem, frozenset(self.forms), self.count))
+
     @property
     def articles(self) -> dict[Article, dict[str, list[Sentence]]]:
         """Returns dict of Articles with this word stem and all its forms
@@ -110,10 +114,10 @@ class Word(metaclass=WordSingleton):
         return articles
 
     def print_articles(self, part_of_speech: str = None):
-        """Prints all articles, forms and sentences, where word of 
+        """Prints all articles, forms and sentences, where word of
         part_of_speech occurs.
-        
-        If part_of_speech is None, prints all articles, forms and 
+
+        If part_of_speech is None, prints all articles, forms and
         sentences with this word.
         """
         if part_of_speech is not None:
@@ -168,7 +172,7 @@ class Word(metaclass=WordSingleton):
 @dataclass
 class Sentence:
     """Sentence.
-    
+
     * article — Article object with this sentence.
     * text — preprocessed sentence string.
     * words — list of words in this sentence.
@@ -181,9 +185,12 @@ class Sentence:
         self.__sentence_preprocessing()
         self.__split_sentence_into_words()
 
+    def __hash__(self) -> int:
+        return hash((self.article, self.text, tuple(self.words)))
+
     def __sentence_preprocessing(self):
         """Remove special characters and extra whitespaces from sentence."""
-        self.text = re.sub(r'[^a-zA-Zа-яА-Я\s]', '', self.text)
+        self.text = re.sub(r'[^a-zA-Zа-яА-Я\s-]', '', self.text)
         self.text = re.sub(r'\s+', ' ', self.text)
         self.text = self.text.strip()
 
@@ -191,17 +198,24 @@ class Sentence:
         """Split sentence into list of word stems."""
         words = word_tokenize(self.text)
         words = [word for word in words if word not in STOPWORDS]
-        stemmer = SnowballStemmer('russian')
         for word in words:
-            word = Word(stemmer.stem(word), word, self)
-            if word not in self.words:
-                self.words.append(word)
+            if '-' in word:
+                part1, part2 = word.split('-')[:2]
+                self.__add_word(stemmer.stem(part1), word)
+                self.__add_word(stemmer.stem(part2), word)
+            self.__add_word(stemmer.stem(word), word)
+
+    def __add_word(self, stem: str, word: str):
+        """Adds word to sentence's list of words."""
+        word = Word(stem, word, self)
+        if word not in self.words:
+            self.words.append(word)
 
 
 @dataclass
 class Article:
     """Article.
-    
+
     * authors — list of author names of article in format 'И.О. Фамилия'
     * title — article title (ALL CAPS).
     * text — preprocessed article text.
@@ -224,7 +238,7 @@ class Article:
         return hash((self.title, tuple(self.authors)))
 
     def __flatten_article_title(self):
-        """Remove newline characters and repeating whitespaces from 
+        """Remove newline characters and repeating whitespaces from
         article titles.
         """
         self.title = re.sub(r'\n', '', self.title)
